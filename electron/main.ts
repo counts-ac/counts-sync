@@ -1,17 +1,15 @@
 import { app, BrowserWindow } from 'electron'
 import path from 'node:path'
 
-// The built directory structure
-//
-// ├─┬─┬ dist
-// │ │ └── index.html
-// │ │
-// │ ├─┬ dist-electron
-// │ │ ├── main.js
-// │ │ └── preload.js
-// │
+
 process.env.DIST = path.join(__dirname, '../dist')
 process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : path.join(process.env.DIST, '../public')
+
+const APP_NAME = 'Counts Sync';
+const APP_ICON = path.join(process.env.VITE_PUBLIC, 'icon-counts.png');
+const APP_ICON_ONLINE = path.join(process.env.VITE_PUBLIC, 'icon-counts-online.png')
+const APP_ICON_ERROR = path.join(process.env.VITE_PUBLIC, 'icon-counts-error.png')
+const APP_ICON_WARNING = path.join(process.env.VITE_PUBLIC, 'icon-counts-warning.png')
 
 
 let win: BrowserWindow | null
@@ -20,10 +18,11 @@ const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
 
 function createWindow() {
   win = new BrowserWindow({
-    icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
+    icon: APP_ICON,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
+    autoHideMenuBar: true
   })
 
   // Test active push message to Renderer-process.
