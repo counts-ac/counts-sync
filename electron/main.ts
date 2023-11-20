@@ -1,5 +1,6 @@
 import { app, BrowserWindow, Menu, Tray, Notification, ipcMain, net } from 'electron'
 import path from 'node:path'
+import { autoUpdater } from "electron-updater"
 import { NotificationProps } from '../types'
 
 process.env.DIST = path.join(__dirname, '../dist')
@@ -73,6 +74,8 @@ app.setLoginItemSettings({
 app.whenReady().then(() => {
   createWindow();
   createTray();
+  autoUpdater.checkForUpdatesAndNotify()
+  app.setBadgeCount(10);
 })
 
 async function tallyStatus(url=TALLY_URL, retry = 3) {
@@ -146,7 +149,6 @@ function createTray() {
   tray.setTitle(APP_NAME)
   tray.setContextMenu(contextMenu);
 
-
   tray.on('click', () => {
     if (!WIN) {
       createWindow();
@@ -163,6 +165,7 @@ function createWindow() {
     icon: APP_ICON,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      // webSecurity: false
     },
     autoHideMenuBar: true
   })
@@ -196,4 +199,5 @@ function createWindow() {
   WIN.flashFrame(true)
 
   WIN.webContents.openDevTools()
+ 
 }

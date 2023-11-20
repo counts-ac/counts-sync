@@ -2,6 +2,8 @@
   "name": "counts-sync",
   "private": true,
   "version": "0.0.0",
+  "author": "Counts",
+  "description": "Counts Sync",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && electron-builder",
@@ -9,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "electron-updater": "^6.1.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
@@ -18,15 +21,20 @@
     "@typescript-eslint/eslint-plugin": "^6.6.0",
     "@typescript-eslint/parser": "^6.6.0",
     "@vitejs/plugin-react": "^4.0.4",
+    "electron": "^26.1.0",
+    "electron-builder": "^24.6.4",
     "eslint": "^8.48.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.3",
     "typescript": "^5.2.2",
     "vite": "^4.4.9",
-    "electron": "^26.1.0",
-    "electron-builder": "^24.6.4",
     "vite-plugin-electron": "^0.14.0",
     "vite-plugin-electron-renderer": "^0.14.5"
   },
-  "main": "dist-electron/main.js"
+  "main": "dist-electron/main.js",
+  "repository": "https://github.com/counts-ac/counts-sync",
+  "publish": {
+    "provider":"github",
+    "releaseType": "release"
+  }
 }
