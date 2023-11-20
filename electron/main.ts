@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, Tray, Notification } from 'electron'
+import { app, BrowserWindow, Menu, Tray, Notification, ipcMain } from 'electron'
 import path from 'node:path'
 import { NotificationProps } from '../types'
 
@@ -17,6 +17,56 @@ let WIN: BrowserWindow;
 const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
 let tray: Tray;
 let QUIT = true;
+let progressInterval: NodeJS.Timeout;
+
+
+ipcMain.on('progress', (_event, data = 0) => {
+  WIN.setProgressBar(data)
+})
+
+// Quit when all windows are closed, except on macOS. There, it's common
+// for applications and their menu bar to stay active until the user quits
+// explicitly with Cmd + Q.
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+
+app.on('activate', () => {
+  // On OS X it's common to re-create a window in the app when the
+  // dock icon is clicked and there are no other windows open.
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow()
+  }
+});
+
+app.on('before-quit', () => {
+  clearInterval(progressInterval)
+})
+
+app.whenReady().then(() => {
+  createWindow();
+  createTray();
+})
+
+
+function progressBar(data = 0) {
+  const INCREMENT = 0.03
+  const INTERVAL_DELAY = 100 // ms
+
+  let c = data
+  progressInterval = setInterval(() => {
+    WIN.setProgressBar(c)
+
+    if (c < 1) {
+      c += INCREMENT
+    } else {
+      WIN.setProgressBar(0)
+      clearInterval(progressInterval)
+    }
+  }, INTERVAL_DELAY)
+}
 
 function showNotification({ title, body }: NotificationProps) {
 
@@ -75,6 +125,10 @@ function createWindow() {
     autoHideMenuBar: true
   })
 
+  WIN.webContents.on('did-start-loading', () => {
+    progressBar();
+  })
+
   // Test active push message to Renderer-process.
   WIN.webContents.on('did-finish-load', () => {
     WIN?.webContents.send('main-process-message', (new Date).toLocaleString())
@@ -98,25 +152,3 @@ function createWindow() {
   WIN.once('focus', () => WIN.flashFrame(false))
   WIN.flashFrame(true)
 }
-
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
-
-app.on('activate', () => {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
-  }
-})
-
-app.whenReady().then(() => {
-  createWindow();
-  createTray();
-})
