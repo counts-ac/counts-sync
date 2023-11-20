@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, Tray, Notification, ipcMain } from 'electron'
+import { app, BrowserWindow, Menu, Tray, Notification, ipcMain, net } from 'electron'
 import path from 'node:path'
 import { NotificationProps } from '../types'
 
@@ -10,7 +10,7 @@ const APP_ICON = path.join(process.env.VITE_PUBLIC, 'icon-counts.png');
 const APP_ICON_ONLINE = path.join(process.env.VITE_PUBLIC, 'icon-counts-online.png')
 const APP_ICON_ERROR = path.join(process.env.VITE_PUBLIC, 'icon-counts-error.png')
 const APP_ICON_WARNING = path.join(process.env.VITE_PUBLIC, 'icon-counts-warning.png')
-
+const TALLY_URL = 'http://localhost:9000';
 
 let WIN: BrowserWindow;
 // 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
@@ -18,6 +18,10 @@ const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
 let tray: Tray;
 let QUIT = true;
 let progressInterval: NodeJS.Timeout;
+
+ipcMain.on('tallyStatus', (_event, data) => {
+  tallyStatus(data);
+})
 
 ipcMain.on('status', (_event, data: 'ONLINE' | 'WARNING' | 'ERROR') => {
   switch (data) {
@@ -65,6 +69,23 @@ app.whenReady().then(() => {
   createWindow();
   createTray();
 })
+
+async function tallyStatus(url=TALLY_URL, retry = 3) {
+  if (retry > 0) {
+    try {
+      const response = await net.fetch(url)
+      if (response.ok) {
+        tray.setImage(APP_ICON_ONLINE)
+      }
+      return response.ok
+    } catch (error) {
+      tray.setImage(APP_ICON_WARNING)
+      tallyStatus(url, retry - 1)
+      return false
+    }
+  }
+  return false
+}
 
 
 function progressBar(data = 0) {
@@ -146,8 +167,9 @@ function createWindow() {
   })
 
   // Test active push message to Renderer-process.
-  WIN.webContents.on('did-finish-load', () => {
-    WIN?.webContents.send('main-process-message', (new Date).toLocaleString())
+  WIN.webContents.on('did-finish-load', async() => {
+    const tallyResponse = await tallyStatus();
+    WIN?.webContents.send('tallyResponse', tallyResponse)
   })
 
   if (VITE_DEV_SERVER_URL) {
