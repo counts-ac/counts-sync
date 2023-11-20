@@ -194,4 +194,6 @@ function createWindow() {
 
   WIN.once('focus', () => WIN.flashFrame(false))
   WIN.flashFrame(true)
+
+  WIN.webContents.openDevTools()
 }
