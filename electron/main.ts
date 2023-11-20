@@ -19,6 +19,22 @@ let tray: Tray;
 let QUIT = true;
 let progressInterval: NodeJS.Timeout;
 
+ipcMain.on('status', (_event, data: 'ONLINE' | 'WARNING' | 'ERROR') => {
+  switch (data) {
+    case 'ONLINE':
+      tray.setImage(APP_ICON_ONLINE);
+      break;
+    case 'WARNING':
+      tray.setImage(APP_ICON_WARNING);
+      break;
+    default:
+      tray.setImage(APP_ICON_ERROR)
+  }
+});
+
+ipcMain.on('notification', (_event, data) => {
+  showNotification(data)
+})
 
 ipcMain.on('progress', (_event, data = 0) => {
   WIN.setProgressBar(data)
