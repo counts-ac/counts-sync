@@ -65,6 +65,11 @@ app.on('before-quit', () => {
   clearInterval(progressInterval)
 })
 
+app.setLoginItemSettings({
+  name: APP_NAME,
+  openAtLogin: true,
+})
+
 app.whenReady().then(() => {
   createWindow();
   createTray();
