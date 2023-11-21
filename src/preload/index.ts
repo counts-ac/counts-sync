@@ -1,8 +1,15 @@
-import { contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
+import { NotificationProps } from '../types'
 
 // Custom APIs for renderer
-const api = {}
+const api = {
+  onNotification: ({ title, body }: NotificationProps): void =>
+    ipcRenderer.send('notification', { title, body }),
+  onStatus: (status: string): void => ipcRenderer.send('status', status),
+  onTally: (url: URL): Promise<unknown> => ipcRenderer.invoke('tally', url),
+  getVersion: () => ipcRenderer.invoke('version')
+}
 
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise

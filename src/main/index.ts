@@ -139,6 +139,15 @@ function createWindow(): void {
   })
 }
 
+app.on('before-quit', () => {
+  clearInterval(progressInterval)
+})
+
+app.setLoginItemSettings({
+  name: APP_NAME,
+  openAtLogin: true
+})
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -179,6 +188,8 @@ ipcMain.handle('tally', async (_event, data) => {
   const response = await tallyStatus(data)
   return response
 })
+
+ipcMain.handle('version', () => app.getVersion())
 
 ipcMain.on('status', (_event, data: 'ONLINE' | 'WARNING' | 'ERROR') => {
   switch (data) {
