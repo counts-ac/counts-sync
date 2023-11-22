@@ -5,6 +5,7 @@ interface apiProps {
   onStatus: (status: string) => void
   onTally: (url: string) => Promise<unknown>
   getVersion: () => Promise<string>
+  getCompanyDetails: (url: string) => Promise<unknown>
 }
 
 declare global {

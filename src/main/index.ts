@@ -12,21 +12,22 @@ import {
 } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+
 import icon from '../../resources/icon.png?asset'
 import icon_online from '../../resources/icon-counts-online.png?asset'
 import icon_warning from '../../resources/icon-counts-warning.png?asset'
 import icon_error from '../../resources/icon-counts-error.png?asset'
+
 import { parseXml } from './utils'
 import { NotificationProps } from '../types'
-import { autoUpdater } from 'electron-updater'
+import { ProgressInfo, autoUpdater } from 'electron-updater'
+import { companyDetails } from './xml-request'
 
-const APP_NAME = 'Counts Sync'
+import { TALLY_URL, APP_NAME } from '../constants'
 
 let mainWindow: BrowserWindow
 let tray: Tray
 let QUIT = true
-let progressInterval: NodeJS.Timeout
-const TALLY_URL = 'http://localhost:9000'
 
 async function tallyStatus(url = TALLY_URL): Promise<unknown> {
   try {
@@ -42,23 +43,6 @@ async function tallyStatus(url = TALLY_URL): Promise<unknown> {
     tray.setImage(icon_error)
     return error
   }
-}
-
-function progressBar(data = 0): void {
-  const INCREMENT = 0.03
-  const INTERVAL_DELAY = 100 // ms
-
-  let c = data
-  progressInterval = setInterval(() => {
-    mainWindow.setProgressBar(c)
-
-    if (c < 1) {
-      c += INCREMENT
-    } else {
-      mainWindow.setProgressBar(0)
-      clearInterval(progressInterval)
-    }
-  }, INTERVAL_DELAY)
 }
 
 function showNotification({ title, body }: NotificationProps): void {
@@ -127,7 +111,6 @@ function createWindow(): void {
   })
 
   mainWindow.webContents.on('did-start-loading', () => {
-    progressBar()
     tallyStatus()
   })
 
@@ -152,10 +135,6 @@ function createWindow(): void {
     mainWindow?.hide()
   })
 }
-
-app.on('before-quit', () => {
-  clearInterval(progressInterval)
-})
 
 /* The `app.setLoginItemSettings()` method is used to configure the behavior of the application when
 the user logs in to their computer. */
@@ -189,7 +168,12 @@ app.whenReady().then(() => {
   })
 })
 
+autoUpdater.on('download-progress', (progressObj: ProgressInfo) => {
+  mainWindow.setProgressBar(progressObj.percent / 100)
+})
+
 autoUpdater.on('update-downloaded', () => {
+  mainWindow.setProgressBar(-1)
   const messageBoxOptions: MessageBoxOptions = {
     icon: icon,
     type: 'info',
@@ -207,8 +191,8 @@ autoUpdater.on('update-downloaded', () => {
 })
 
 autoUpdater.on('error', (error) => {
-  dialog.showErrorBox('Error: ', error == null ? "unknown" : (error.stack || error).toString());
-});
+  dialog.showErrorBox('Error: ', error == null ? 'unknown' : (error.stack || error).toString())
+})
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
@@ -223,8 +207,7 @@ app.on('window-all-closed', () => {
 // code. You can also put them in separate files and require them here.
 
 ipcMain.handle('tally', async (_event, data) => {
-  const response = await tallyStatus(data)
-  return response
+  return await tallyStatus(data)
 })
 
 ipcMain.handle('version', () => app.getVersion())
@@ -247,5 +230,7 @@ ipcMain.on('notification', (_event, data) => {
 })
 
 ipcMain.on('progress', (_event, data = 0) => {
-  mainWindow.setProgressBar(data)
+  mainWindow.setProgressBar(data / 100)
 })
+
+ipcMain.handle('companyDetails', async (_event, data: string) => await companyDetails(data))

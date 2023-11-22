@@ -1,5 +1,16 @@
+import { companyDetails } from '@renderer/services/ipc'
+import { useEffect, useState } from 'react'
+
 const HomePage = () => {
-  return <div style={{ height: '80%' }}>version 0.0.0</div>
+  const [company, setCompany] = useState('')
+  useEffect(() => {
+    console.log('HomePage')
+    companyDetails().then((res) => {
+      setCompany(res as string)
+    })
+  }, [])
+
+  return <code>{JSON.stringify(company, null, 4)}</code>
 }
 
 export default HomePage

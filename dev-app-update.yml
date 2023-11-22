@@ -1,4 +1,4 @@
 provider: github
 owner: counts-ac
 repo: counts-sync
-updaterCacheDirName: counts-sync-updater
+updaterCacheDirName: Counts-Sync-Updater
