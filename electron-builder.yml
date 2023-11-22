@@ -39,5 +39,6 @@ appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://github.com/counts-ac/counts-sync
+  provider: github
+  owner: counts-ac
+  repo: counts-sync

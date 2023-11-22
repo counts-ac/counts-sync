@@ -1,4 +1,15 @@
-import { app, shell, BrowserWindow, Tray, Menu, Notification, net, ipcMain } from 'electron'
+import {
+  app,
+  shell,
+  BrowserWindow,
+  Tray,
+  Menu,
+  Notification,
+  net,
+  ipcMain,
+  dialog,
+  MessageBoxOptions
+} from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -7,6 +18,7 @@ import icon_warning from '../../resources/icon-counts-warning.png?asset'
 import icon_error from '../../resources/icon-counts-error.png?asset'
 import { parseXml } from './utils'
 import { NotificationProps } from '../types'
+import { autoUpdater } from 'electron-updater'
 
 const APP_NAME = 'Counts Sync'
 
@@ -27,7 +39,7 @@ async function tallyStatus(url = TALLY_URL): Promise<unknown> {
     }
     return false
   } catch (error) {
-    tray.setImage(icon_warning)
+    tray.setImage(icon_error)
     return error
   }
 }
@@ -53,7 +65,10 @@ function showNotification({ title, body }: NotificationProps): void {
   const notification = new Notification({ title, body, icon: icon })
   notification.show()
   notification.on('click', () => {
-    // console.log(CLICK_MESSAGE)
+    if (!mainWindow) {
+      createWindow()
+    }
+    mainWindow?.show()
   })
 }
 
@@ -68,7 +83,6 @@ function createTray(): void {
           createWindow()
         }
         mainWindow?.show()
-        mainWindow?.setAlwaysOnTop(true)
       }
     },
     { type: 'separator' },
@@ -90,7 +104,6 @@ function createTray(): void {
       createWindow()
     }
     mainWindow?.show()
-    mainWindow?.setAlwaysOnTop(true)
   })
 }
 
@@ -115,6 +128,7 @@ function createWindow(): void {
 
   mainWindow.webContents.on('did-start-loading', () => {
     progressBar()
+    tallyStatus()
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -143,6 +157,8 @@ app.on('before-quit', () => {
   clearInterval(progressInterval)
 })
 
+/* The `app.setLoginItemSettings()` method is used to configure the behavior of the application when
+the user logs in to their computer. */
 app.setLoginItemSettings({
   name: APP_NAME,
   openAtLogin: true
@@ -164,6 +180,7 @@ app.whenReady().then(() => {
 
   createWindow()
   createTray()
+  autoUpdater.checkForUpdates()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
@@ -171,6 +188,27 @@ app.whenReady().then(() => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 })
+
+autoUpdater.on('update-downloaded', () => {
+  const messageBoxOptions: MessageBoxOptions = {
+    icon: icon,
+    type: 'info',
+    title: 'Update downloaded',
+    message: 'A new version has been downloaded. Do you want to install it now?',
+    buttons: ['Yes', 'Later']
+  }
+
+  dialog.showMessageBox(messageBoxOptions).then((response) => {
+    if (response.response === 0) {
+      // If 'Yes' is clicked
+      autoUpdater.quitAndInstall()
+    }
+  })
+})
+
+autoUpdater.on('error', (error) => {
+  dialog.showErrorBox('Error: ', error == null ? "unknown" : (error.stack || error).toString());
+});
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits

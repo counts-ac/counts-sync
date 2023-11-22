@@ -7,5 +7,5 @@ export const useVersion = () => {
     window.api.getVersion().then((res) => setVersion(res))
   }, [])
 
-  return version;
+  return version
 }

@@ -1,5 +1,5 @@
 import { useNetwork, useTallyStatus, useVersion } from '@renderer/hooks'
-import styles from './footer.module.css';
+import styles from './footer.module.css'
 
 const Footer = () => {
   const net = useNetwork()
