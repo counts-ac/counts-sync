@@ -1,15 +1,4 @@
-import {
-  app,
-  shell,
-  BrowserWindow,
-  Tray,
-  Menu,
-  Notification,
-  net,
-  ipcMain,
-  dialog,
-  MessageBoxOptions
-} from 'electron'
+import { app, shell, BrowserWindow, Tray, Menu, Notification, net, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 
@@ -21,13 +10,15 @@ import icon_error from '../../resources/icon-counts-error.png?asset'
 import { parseXml } from './utils'
 import { NotificationProps } from '../types'
 import { ProgressInfo, autoUpdater } from 'electron-updater'
-import { companyDetails } from './xml-request'
+import './xml-request'
 
 import { TALLY_URL, APP_NAME } from '../constants'
 
 let mainWindow: BrowserWindow
 let tray: Tray
 let QUIT = true
+
+autoUpdater.autoInstallOnAppQuit = true
 
 async function tallyStatus(url = TALLY_URL): Promise<unknown> {
   try {
@@ -174,24 +165,13 @@ autoUpdater.on('download-progress', (progressObj: ProgressInfo) => {
 
 autoUpdater.on('update-downloaded', () => {
   mainWindow.setProgressBar(-1)
-  const messageBoxOptions: MessageBoxOptions = {
-    icon: icon,
-    type: 'info',
-    title: 'Update downloaded',
-    message: 'A new version has been downloaded. Do you want to install it now?',
-    buttons: ['Yes', 'Later']
-  }
-
-  dialog.showMessageBox(messageBoxOptions).then((response) => {
-    if (response.response === 0) {
-      // If 'Yes' is clicked
-      autoUpdater.quitAndInstall()
-    }
-  })
 })
 
 autoUpdater.on('error', (error) => {
-  dialog.showErrorBox('Error: ', error == null ? 'unknown' : (error.stack || error).toString())
+  dialog.showErrorBox(
+    'Update Error: ',
+    error == null ? 'unknown' : (error.stack || error).toString()
+  )
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -232,5 +212,3 @@ ipcMain.on('notification', (_event, data) => {
 ipcMain.on('progress', (_event, data = 0) => {
   mainWindow.setProgressBar(data / 100)
 })
-
-ipcMain.handle('companyDetails', async (_event, data: string) => await companyDetails(data))
