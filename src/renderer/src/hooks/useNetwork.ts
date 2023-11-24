@@ -58,6 +58,5 @@ export function useNetwork() {
     return () => {}
   }, [handleConnectionChange])
 
-  window.api.onStatus(status.online === true ? 'ONLINE' : 'WARNING')
   return status
 }

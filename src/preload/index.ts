@@ -6,10 +6,10 @@ import { NotificationProps } from '../types'
 const api = {
   onNotification: ({ title, body }: NotificationProps) =>
     ipcRenderer.send('notification', { title, body }),
-  onStatus: (status: string) => ipcRenderer.send('status', status),
   onTally: (url: string) => ipcRenderer.invoke('tally', url),
   getVersion: () => ipcRenderer.invoke('version'),
-  getCompanyDetails: (url: string) => ipcRenderer.invoke('companyDetails', url)
+  getCompanyDetails: () => ipcRenderer.invoke('companyDetails'),
+  onTallyStatus: (ck) => ipcRenderer.on('tallyStatus', ck)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

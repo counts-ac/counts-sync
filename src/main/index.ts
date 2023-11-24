@@ -1,18 +1,18 @@
-import { app, shell, BrowserWindow, Tray, Menu, Notification, net, ipcMain, dialog } from 'electron'
+import { app, shell, BrowserWindow, Tray, Menu, Notification, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 
 import icon from '../../resources/icon.png?asset'
 import icon_online from '../../resources/icon-counts-online.png?asset'
-import icon_warning from '../../resources/icon-counts-warning.png?asset'
-import icon_error from '../../resources/icon-counts-error.png?asset'
 
-import { parseXml } from './utils'
+import { debounce, fileWatcher, tallyRequest } from './utils'
 import { NotificationProps } from '../types'
 import { ProgressInfo, autoUpdater } from 'electron-updater'
-import './xml-request'
+import Store from 'electron-store'
 
 import { TALLY_URL, APP_NAME } from '../constants'
+import { companyDetails } from './xml-request'
+import { Company } from './types'
 
 let mainWindow: BrowserWindow
 let tray: Tray
@@ -20,20 +20,44 @@ let QUIT = true
 
 autoUpdater.autoInstallOnAppQuit = true
 
-async function tallyStatus(url = TALLY_URL): Promise<unknown> {
-  try {
-    const response = await net.fetch(url)
-    if (response.status === 200) {
-      const xmlData = await response.text()
-      const data = await parseXml(xmlData)
-      tray.setImage(icon_online)
-      return data
-    }
-    return false
-  } catch (error) {
-    tray.setImage(icon_error)
-    return error
+const store = new Store()
+const TALLY_BASE_URL = (store.get('tallyBaseUrl') as string) || TALLY_URL
+
+const syncToServer = debounce(async () => {
+  tray.setImage(icon_online)
+  showNotification({ title: 'Counts Sync', body: 'Sync data to server' })
+  setTimeout(() => {
+    tray.setImage(icon)
+  }, 5000)
+  mainWindow.webContents.send('tallyStatus', await tallyStatus())
+}, 2000)
+
+function companyDataWatcher() {
+  const company = store.get('company') as Company[]
+  if (company) {
+    company?.forEach((company: Company) => {
+      fileWatcher(company.DESTINATION, () => {
+        syncToServer()
+      })
+    })
   }
+}
+
+function mainOnRender() {
+  companyDataWatcher()
+}
+
+async function tallyStatus(): Promise<unknown> {
+  const response = await tallyRequest({
+    url: TALLY_BASE_URL,
+    method: 'GET'
+  })
+
+  if (response.error) {
+    return null
+  }
+
+  return response.data?.['RESPONSE']
 }
 
 function showNotification({ title, body }: NotificationProps): void {
@@ -110,6 +134,10 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
+  mainWindow.webContents.on('did-finish-load', async () => {
+    await mainOnRender()
+  })
+
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
@@ -183,27 +211,12 @@ app.on('window-all-closed', () => {
   }
 })
 
-// In this file you can include the rest of your app"s specific main process
-// code. You can also put them in separate files and require them here.
-
 ipcMain.handle('tally', async (_event, data) => {
-  return await tallyStatus(data)
+  store.set('tallyBaseUrl', data)
+  return await tallyStatus()
 })
 
 ipcMain.handle('version', () => app.getVersion())
-
-ipcMain.on('status', (_event, data: 'ONLINE' | 'WARNING' | 'ERROR') => {
-  switch (data) {
-    case 'ONLINE':
-      tray.setImage(icon_online)
-      break
-    case 'WARNING':
-      tray.setImage(icon_warning)
-      break
-    default:
-      tray.setImage(icon_error)
-  }
-})
 
 ipcMain.on('notification', (_event, data) => {
   showNotification(data)
@@ -211,4 +224,13 @@ ipcMain.on('notification', (_event, data) => {
 
 ipcMain.on('progress', (_event, data = 0) => {
   mainWindow.setProgressBar(data / 100)
+})
+
+ipcMain.handle('companyDetails', async () => {
+  const company = await companyDetails(TALLY_BASE_URL)
+  if (company) {
+    store.set('company', company)
+    return company
+  }
+  return null
 })

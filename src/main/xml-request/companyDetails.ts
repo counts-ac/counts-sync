@@ -1,31 +1,33 @@
 import { tallyRequest } from '../utils'
+import { Company, ICompanyDetails } from '../types'
 
-const bodyContent = `<ENVELOPE>
-    <HEADER>
-<VERSION>1</VERSION>
-<TALLYREQUEST>Export</TALLYREQUEST>
-<TYPE>Collection</TYPE>
-<ID>AllActiveCompanies</ID>
-</HEADER>
-<BODY>
+const bodyContent = `
+<ENVELOPE>
+  <HEADER>
+    <VERSION>1</VERSION>
+    <TALLYREQUEST>Export</TALLYREQUEST>
+    <TYPE>Collection</TYPE>
+    <ID>AllActiveCompanies</ID>
+  </HEADER>
+  <BODY>
     <DESC>
-        <STATICVARIABLES>
-    <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
-</STATICVARIABLES>
-<TDL>
-    <TDLMESSAGE>
-   <COLLECTION NAME="AllActiveCompanies" ISMODIFY="No" ISFIXED="No" ISINITIALIZE="No" ISOPTION="No" ISINTERNAL="No">
-    <Type>Company</Type>
-    <NativeMethod>Name, GUID, LastVoucherDate, BooksFrom</NativeMethod>
-
-   </COLLECTION>
-</TDLMESSAGE>
-</TDL>
-</DESC>
-</BODY>
+      <STATICVARIABLES>
+        <SVEXPORTFORMAT>$$SysName:xml</SVEXPORTFORMAT>
+      </STATICVARIABLES>
+      <TDL>
+        <TDLMESSAGE>
+          <COLLECTION NAME="AllActiveCompanies" ISMODIFY="No" ISFIXED="No" ISINITIALIZE="No" ISOPTION="No" ISINTERNAL="No">
+            <TYPE>Company</TYPE>
+            <NATIVEMETHOD>Name, GUID, LastVoucherDate, BooksFrom, LastVoucherAlterID, Destination</NATIVEMETHOD>
+          
+            </COLLECTION>
+        </TDLMESSAGE>
+      </TDL>
+    </DESC>
+  </BODY>
 </ENVELOPE>`
 
-export async function companyDetails(url: string) {
+export async function companyDetails(url: string): Promise<Company[] | null> {
   const { data, error } = await tallyRequest({
     url,
     method: 'POST',
@@ -35,11 +37,5 @@ export async function companyDetails(url: string) {
   if (error) {
     return null
   }
-
-  return data?.ENVELOPE?.BODY[0]?.DATA[0]?.COLLECTION?.map((item) => ({
-    name: item?.COMPANY[0]?.NAME[0]?._,
-    booksfrom: item?.COMPANY[0]?.BOOKSFROM[0]?._,
-    guid: item?.COMPANY[0]?.GUID[0]?._,
-    lastvoucherdate: item?.COMPANY[0]?.LASTVOUCHERDATE[0]?._
-  }))
+  return (data as ICompanyDetails).ENVELOPE.BODY.DATA.COLLECTION.COMPANY
 }

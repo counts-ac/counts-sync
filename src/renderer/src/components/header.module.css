@@ -7,21 +7,30 @@
   padding: 2rem;
   color: #ffff;
   gap: 1rem;
+  text-align: center;
 }
 
-.logoContainer{
+.navbar > * {
+  flex: 1;
+}
+
+.navbar > *:last-child {
+  text-align: right;
+}
+
+.logoContainer {
   display: flex;
   align-items: center;
   justify-items: center;
-  gap: .3rem;
+  gap: 0.3rem;
 }
 
-.logo{
+.logo {
   width: 2rem;
   height: 2rem;
 }
 
-.logoText{
+.logoText {
   font-size: 1rem;
   font-weight: 600;
 }

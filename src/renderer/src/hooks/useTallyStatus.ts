@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 
-export const useTallyStatus = (timer = 20000) => {
+export const useTallyStatus = () => {
   const [status, setStatus] = useState(false)
 
-  const refetch = useCallback(async () => {
+  const refetch = useCallback(() => {
     try {
-      const data = await window.api.onTally('http://localhost:9000')
-      if (data?.['RESPONSE']) {
-        setStatus(true)
-      } else {
-        setStatus(false)
-      }
+      window.api.onTallyStatus((_event, data: string | null) => {
+        if (data) {
+          setStatus(true)
+        } else {
+          setStatus(false)
+        }
+      })
     } catch (error) {
       console.error(error)
       setStatus(false)
@@ -19,10 +20,7 @@ export const useTallyStatus = (timer = 20000) => {
 
   useEffect(() => {
     refetch()
-    const clear = setInterval(refetch, timer)
-
-    return () => clearInterval(clear)
-  }, [refetch, timer])
+  }, [refetch])
 
   return { status, refetch }
 }

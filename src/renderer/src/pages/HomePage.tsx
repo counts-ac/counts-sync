@@ -1,16 +1,13 @@
-import { companyDetails } from '@renderer/services/ipc'
-import { useEffect, useState } from 'react'
+import { useQuery } from 'react-query'
 
 const HomePage = () => {
-  const [company, setCompany] = useState('')
-  useEffect(() => {
-    console.log('HomePage')
-    companyDetails().then((res) => {
-      setCompany(res as string)
-    })
-  }, [])
+  const { isLoading, data } = useQuery('repoData', () =>
+    window.api.getCompanyDetails().then((res) => res)
+  )
 
-  return <code>{JSON.stringify(company, null, 4)}</code>
+  if (isLoading) return 'Loading...'
+
+  return <pre>{data ? JSON.stringify(data, null, 4) : 'Tally not connected'}</pre>
 }
 
 export default HomePage

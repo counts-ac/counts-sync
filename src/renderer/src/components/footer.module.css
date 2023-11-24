@@ -11,3 +11,16 @@
   bottom: 0;
   width: 100%;
 }
+
+.footer > * {
+  flex: 1;
+  text-align: center;
+}
+
+.footer > *:first-child {
+  text-align: left;
+}
+
+.footer > *:last-child {
+  text-align: right;
+}
